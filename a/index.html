@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Arquitectura de Software | UPLA</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Estilos específicos del index */
+    .recent-semana-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      transition: all var(--tr) var(--ease);
+      animation: fadeUp .4s var(--ease) both;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .recent-semana-card:hover {
+      border-color: var(--border-glow);
+      box-shadow: var(--shadow-neon);
+      transform: translateY(-2px);
+    }
+    .recent-semana-card .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .recent-semana-card .card-num {
+      font-family: var(--font-m);
+      font-size: .62rem;
+      color: var(--blue);
+      letter-spacing: .08em;
+      margin-bottom: 4px;
+    }
+    .recent-semana-card .card-title {
+      font-family: var(--font-h);
+      font-size: .92rem;
+      font-weight: 700;
+    }
+    .recent-semana-card .card-desc {
+      font-size: .75rem;
+      color: var(--text-2);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .recent-semana-card .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+    .tipo-pills {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .tipo-pill {
+      font-size: .6rem;
+      font-family: var(--font-m);
+      padding: 2px 7px;
+      border-radius: 100px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-3);
+    }
+    .buscador-global {
+      background: var(--bg-surface);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 48px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .buscador-global h3 {
+      font-family: var(--font-h);
+      font-size: 1rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .buscador-global .search-wrap {
+      flex: 1;
+      max-width: 100%;
+    }
+    #searchResults {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all var(--tr);
+    }
+    .search-result-item:hover {
+      border-color: var(--border-glow);
+    }
+    .search-result-item .result-label {
+      font-size: .78rem;
+      color: var(--text-1);
+      flex: 1;
+    }
+    .search-result-item .result-sub {
+      font-size: .68rem;
+      color: var(--text-3);
+      font-family: var(--font-m);
+    }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav id="navbar"></nav>
+
+  <div class="page">
+    <div class="page-body">
+
+      <!-- HERO -->
+      <section class="hero">
+        <div class="hero-grid"></div>
+        <div class="hero-glow"></div>
+        <div class="container">
+          <div class="hero-content">
+            <div class="hero-eyebrow">
+              <span class="pulse-dot"></span>
+              Ciclo 2026 — I &nbsp;·&nbsp; UPLA
+            </div>
+            <h1 class="hero-title">
+              Repositorio de<br>
+              <span class="gradient-text">Arquitectura</span><br>
+              de Software
+            </h1>
+            <p class="hero-desc">
+              Plataforma académica para gestionar, visualizar y descargar los materiales
+              semanales del curso de Arquitectura de Software — Universidad Peruana Los Andes.
+            </p>
+            <div class="hero-cta">
+              <a href="semanas.html" class="btn-primary">
+                <i class="fa-solid fa-layer-group"></i> Ver semanas
+              </a>
+              <a href="sobre-mi.html" class="btn-secondary">
+                <i class="fa-solid fa-user-circle"></i> Sobre mí
+              </a>
+            </div>
+            <div class="hero-stats-row">
+              <div class="hero-stat">
+                <div class="stat-num" id="hStatSemanas">—</div>
+                <div class="stat-lbl">SEMANAS</div>
+              </div>
+              <div class="hero-sep"></div>
+              <div class="hero-stat">
+                <div class="stat-num" id="hStatArchivos">—</div>
+                <div class="stat-lbl">ARCHIVOS</div>
+              </div>
+              <div class="hero-sep"></div>
+              <div class="hero-stat">
+                <div class="stat-num" id="hStatProyectos">—</div>
+                <div class="stat-lbl">PROYECTOS</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BUSCADOR GLOBAL -->
+      <section class="section" style="padding-bottom:0">
+        <div class="container">
+          <div class="buscador-global">
+            <h3><i class="fa-solid fa-magnifying-glass" style="color:var(--neon);margin-right:8px"></i>Búsqueda global</h3>
+            <div class="search-wrap" style="max-width:100%">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="globalSearch" placeholder="Buscar semanas, archivos, proyectos…"/>
+            </div>
+          </div>
+          <div id="searchResults" class="hidden"></div>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section class="section">
+        <div class="container">
+          <div class="section-header">
+            <div>
+              <div class="section-tag">¿QUÉ ENCONTRARÁS?</div>
+              <h2 class="section-title">Todo en un solo lugar</h2>
+            </div>
+          </div>
+          <div class="feature-grid">
+            <div class="feature-card" style="--d:.05s">
+              <div class="feature-icon" style="background:var(--neon-dim);color:var(--neon)">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <h3>Semanas organizadas</h3>
+              <p>Materiales clasificados semana a semana, con título, descripción y archivos adjuntos.</p>
+            </div>
+            <div class="feature-card" style="--d:.1s">
+              <div class="feature-icon" style="background:var(--blue-dim);color:var(--blue)">
+                <i class="fa-solid fa-filter"></i>
+              </div>
+              <h3>Filtros avanzados</h3>
+              <p>Filtra por tipo: PDF, imágenes, Word, Excel u otros. Búsqueda global integrada.</p>
+            </div>
+            <div class="feature-card" style="--d:.15s">
+              <div class="feature-icon" style="background:rgba(168,85,247,.12);color:var(--purple)">
+                <i class="fa-solid fa-eye"></i>
+              </div>
+              <h3>Vista previa</h3>
+              <p>Visualiza PDF e imágenes directamente en el navegador sin descargar nada.</p>
+            </div>
+            <div class="feature-card" style="--d:.2s">
+              <div class="feature-icon" style="background:rgba(34,197,94,.1);color:var(--green)">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h3>Panel Admin seguro</h3>
+              <p>Sistema de autenticación con Supabase. Solo el admin puede crear, editar y eliminar.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEMANAS RECIENTES -->
+      <section class="section" style="padding-top:0">
+        <div class="container">
+          <div class="section-header">
+            <div>
+              <div class="section-tag">ÚLTIMAS ACTUALIZACIONES</div>
+              <h2 class="section-title">Semanas <span class="gradient-text">recientes</span></h2>
+            </div>
+            <a href="semanas.html" class="btn-secondary">Ver todas <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+
+          <!-- Skeleton -->
+          <div id="recentSkeleton" class="auto-grid">
+            <div class="skeleton" style="height:160px"></div>
+            <div class="skeleton" style="height:160px"></div>
+            <div class="skeleton" style="height:160px"></div>
+          </div>
+
+          <div id="recentGrid" class="auto-grid hidden"></div>
+          <div id="recentEmpty" class="empty-state hidden">
+            <i class="fa-solid fa-box-open"></i>
+            <h3>Sin semanas aún</h3>
+            <p>El administrador aún no ha cargado semanas.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+    <footer id="mainFooter"></footer>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="config.js"></script>
+  <script>
+    // ── INDEX PAGE LOGIC ────────────────────────────────────────
+    let allSemanas = [], allArchivos = [], allProyectos = [];
+
+    async function cargarHome() {
+      try {
+        const [{ data: semanas }, { data: archivos }, { data: proyectos }] = await Promise.all([
+          sb.from('semanas').select('*').order('numero_semana', { ascending: false }).limit(6),
+          sb.from('archivos').select('*'),
+          sb.from('proyectos').select('*'),
+        ]);
+
+        allSemanas   = semanas   || [];
+        allArchivos  = archivos  || [];
+        allProyectos = proyectos || [];
+
+        // Estadísticas hero
+        $('hStatSemanas').textContent   = allSemanas.length;
+        $('hStatArchivos').textContent  = allArchivos.length;
+        $('hStatProyectos').textContent = allProyectos.length;
+
+        renderRecientes();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Error al cargar datos.', 'error');
+      }
+    }
+
+    function renderRecientes() {
+      $('recentSkeleton').classList.add('hidden');
+      const grid = $('recentGrid');
+
+      if (allSemanas.length === 0) {
+        $('recentEmpty').classList.remove('hidden');
+        return;
+      }
+      grid.classList.remove('hidden');
+      grid.innerHTML = '';
+
+      allSemanas.slice(0, 6).forEach((s, i) => {
+        const archs = allArchivos.filter(a => a.semana_id === s.id);
+        const tipos = [...new Set(archs.map(a => a.tipo))];
+        const card = document.createElement('div');
+        card.className = 'recent-semana-card';
+        card.style.animationDelay = `${i * .06}s`;
+        card.innerHTML = `
+          <div class="card-top">
+            <div>
+              <div class="card-num">SEMANA ${s.numero_semana}</div>
+              <div class="card-title">${escHtml(s.titulo)}</div>
+            </div>
+            <span class="badge blue">${archs.length} arch.</span>
+          </div>
+          <div class="card-desc">${escHtml(s.descripcion || 'Sin descripción')}</div>
+          <div class="card-footer">
+            <div class="tipo-pills">
+              ${tipos.map(t => `<span class="tipo-pill">${t.toUpperCase()}</span>`).join('')}
+            </div>
+            <a href="semanas.html" class="btn-icon" title="Ver semana"><i class="fa-solid fa-arrow-right"></i></a>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+
+    // Búsqueda global
+    let debounce;
+    $('globalSearch').addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        const term = $('globalSearch').value.trim().toLowerCase();
+        const cont = $('searchResults');
+        if (!term) { cont.classList.add('hidden'); cont.innerHTML = ''; return; }
+
+        const resultsSem = allSemanas.filter(s =>
+          s.titulo?.toLowerCase().includes(term) || s.descripcion?.toLowerCase().includes(term)
+        ).slice(0, 4).map(s => ({ tipo: 'semana', label: `Semana ${s.numero_semana}: ${s.titulo}`, sub: 'Semana', href: 'semanas.html' }));
+
+        const resultsArch = allArchivos.filter(a =>
+          a.nombre?.toLowerCase().includes(term)
+        ).slice(0, 4).map(a => ({ tipo: 'archivo', label: a.nombre, sub: a.tipo.toUpperCase(), href: 'semanas.html' }));
+
+        const results = [...resultsSem, ...resultsArch];
+        cont.classList.remove('hidden');
+        if (results.length === 0) {
+          cont.innerHTML = `<div class="search-result-item"><span class="result-label">Sin resultados para "${escHtml(term)}"</span></div>`;
+          return;
+        }
+        cont.innerHTML = results.map(r => {
+          const iconMap = { semana: 'fa-layer-group', archivo: 'fa-file' };
+          return `<div class="search-result-item" onclick="window.location.href='${r.href}'">
+            <i class="fa-solid ${iconMap[r.tipo]||'fa-file'}" style="color:var(--neon);font-size:.85rem"></i>
+            <span class="result-label">${escHtml(r.label)}</span>
+            <span class="result-sub">${r.sub}</span>
+          </div>`;
+        }).join('');
+      }, 300);
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await verificarSesion();
+      renderNavbar('home');
+      renderModalLogin(() => { renderNavbar('home'); });
+      await cargarHome();
+    });
+  </script>
+</body>
+</html>

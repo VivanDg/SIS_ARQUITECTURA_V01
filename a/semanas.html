@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Semanas | Arquitectura de Software UPLA</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .semanas-page-hero {
+      background: linear-gradient(135deg, var(--bg-surface), var(--bg-base));
+      border-bottom: 1px solid var(--border);
+      padding: 48px 0 36px;
+    }
+    .semanas-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .sort-select {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: .8rem;
+      color: var(--text-2);
+    }
+    .sort-select select {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text-1);
+      font-size: .8rem;
+      font-family: var(--font-b);
+      cursor: pointer;
+    }
+    .semana-detail-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 800;
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 80px 20px 20px;
+      animation: fadeIn .2s;
+      overflow-y: auto;
+    }
+    .semana-detail-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 760px;
+      animation: slideUp .3s var(--ease);
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      overflow: hidden;
+    }
+    .detail-header {
+      padding: 28px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(0,255,135,.04), rgba(14,165,233,.04));
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .detail-header-close {
+      width: 32px; height: 32px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--text-3);
+      font-size: .82rem;
+      flex-shrink: 0;
+      transition: all var(--tr);
+    }
+    .detail-header-close:hover { color: var(--red); border-color: rgba(255,77,109,.3); }
+    .detail-body { padding: 24px 28px; }
+    .detail-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .detail-files-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .detail-file-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all var(--tr) var(--ease);
+    }
+    .detail-file-row:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-glow);
+    }
+    .detail-file-info { flex: 1; min-width: 0; }
+    .detail-file-name { font-size: .82rem; color: var(--text-1); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .detail-file-meta { font-size: .68rem; color: var(--text-3); font-family: var(--font-m); margin-top: 2px; }
+    .detail-file-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <nav id="navbar"></nav>
+
+  <div class="page">
+    <div class="page-body">
+
+      <!-- HERO -->
+      <section class="semanas-page-hero">
+        <div class="container">
+          <div class="section-tag">REPOSITORIO ACADÉMICO</div>
+          <h1 class="section-title" style="margin-top:6px;margin-bottom:10px">
+            Semanas del <span class="gradient-text">Curso</span>
+          </h1>
+          <p style="color:var(--text-2);font-size:.88rem;max-width:520px">
+            Todos los materiales organizados por semana. Haz clic en una semana para ver sus archivos.
+          </p>
+        </div>
+      </section>
+
+      <!-- CONTENIDO -->
+      <section class="section">
+        <div class="container">
+
+          <!-- TOOLBAR -->
+          <div class="semanas-toolbar">
+            <div class="filters-row" id="typeFilters">
+              <button class="filter-chip active" data-type="all"><i class="fa-solid fa-border-all"></i> Todos</button>
+              <button class="filter-chip" data-type="pdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+              <button class="filter-chip" data-type="imagen"><i class="fa-solid fa-image"></i> Imágenes</button>
+              <button class="filter-chip" data-type="word"><i class="fa-solid fa-file-word"></i> Word</button>
+              <button class="filter-chip" data-type="excel"><i class="fa-solid fa-file-excel"></i> Excel</button>
+              <button class="filter-chip" data-type="otro"><i class="fa-solid fa-file"></i> Otros</button>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <div class="search-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="semanaSearch" placeholder="Buscar semana…"/>
+              </div>
+              <div class="sort-select">
+                <i class="fa-solid fa-sort" style="color:var(--text-3);font-size:.78rem"></i>
+                <select id="sortSelect">
+                  <option value="numero-asc">Semana ↑</option>
+                  <option value="numero-desc">Semana ↓</option>
+                  <option value="nombre-asc">Nombre A-Z</option>
+                  <option value="nombre-desc">Nombre Z-A</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- SKELETON -->
+          <div class="auto-grid" id="semanasSkeleton">
+            <div class="skeleton" style="height:200px"></div>
+            <div class="skeleton" style="height:200px"></div>
+            <div class="skeleton" style="height:200px"></div>
+            <div class="skeleton" style="height:200px"></div>
+          </div>
+
+          <!-- GRID -->
+          <div class="auto-grid hidden" id="semanasGrid"></div>
+
+          <!-- EMPTY -->
+          <div class="empty-state hidden" id="semanasEmpty">
+            <i class="fa-solid fa-folder-open"></i>
+            <h3>No se encontraron semanas</h3>
+            <p>Intenta con otro término o espera a que el administrador cargue contenido.</p>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+    <footer id="mainFooter"></footer>
+  </div>
+
+  <!-- DETALLE SEMANA -->
+  <div id="semanaDetail" class="semana-detail-overlay hidden">
+    <div class="semana-detail-card">
+      <div class="detail-header">
+        <div>
+          <div class="semana-num" id="detailNum">SEMANA 1</div>
+          <h2 id="detailTitle" style="font-family:var(--font-h);font-size:1.15rem;font-weight:800;margin-top:4px"></h2>
+          <p id="detailDesc" style="font-size:.78rem;color:var(--text-2);margin-top:6px;line-height:1.6"></p>
+        </div>
+        <button class="detail-header-close" id="closeDetail"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="detail-body">
+        <div class="detail-filters" id="detailFilters">
+          <button class="filter-chip active" data-type="all"><i class="fa-solid fa-border-all"></i> Todos</button>
+          <button class="filter-chip" data-type="pdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+          <button class="filter-chip" data-type="imagen"><i class="fa-solid fa-image"></i> Img</button>
+          <button class="filter-chip" data-type="word"><i class="fa-solid fa-file-word"></i> Word</button>
+          <button class="filter-chip" data-type="excel"><i class="fa-solid fa-file-excel"></i> Excel</button>
+          <button class="filter-chip" data-type="otro"><i class="fa-solid fa-file"></i> Otros</button>
+        </div>
+        <div class="detail-files-grid" id="detailFilesGrid"></div>
+        <div class="empty-state hidden" id="detailEmpty">
+          <i class="fa-solid fa-inbox"></i>
+          <h3>Sin archivos</h3>
+          <p>Esta semana no tiene archivos con ese tipo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="config.js"></script>
+  <script>
+    let semanas = [], archivos = [];
+    let filtroTipo = 'all', sortMode = 'numero-asc', searchTerm = '';
+    let semanaActual = null, detailFiltro = 'all';
+
+    async function cargarSemanas() {
+      try {
+        const [{ data: s }, { data: a }] = await Promise.all([
+          sb.from('semanas').select('*'),
+          sb.from('archivos').select('*'),
+        ]);
+        semanas  = s || [];
+        archivos = a || [];
+        renderSemanas();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Error al cargar semanas.', 'error');
+      } finally {
+        $('semanasSkeleton').classList.add('hidden');
+      }
+    }
+
+    function getSemanasFiltradas() {
+      let list = semanas.filter(s => {
+        const term = searchTerm.toLowerCase();
+        if (!term) return true;
+        return s.titulo?.toLowerCase().includes(term) || s.descripcion?.toLowerCase().includes(term) || `semana ${s.numero_semana}`.includes(term);
+      });
+
+      // Filtro por tipo (si hay archivos de ese tipo en la semana)
+      if (filtroTipo !== 'all') {
+        list = list.filter(s => archivos.some(a => a.semana_id === s.id && a.tipo === filtroTipo));
+      }
+
+      // Ordenar
+      list.sort((a, b) => {
+        if (sortMode === 'numero-asc')  return a.numero_semana - b.numero_semana;
+        if (sortMode === 'numero-desc') return b.numero_semana - a.numero_semana;
+        if (sortMode === 'nombre-asc')  return a.titulo.localeCompare(b.titulo);
+        if (sortMode === 'nombre-desc') return b.titulo.localeCompare(a.titulo);
+        return 0;
+      });
+      return list;
+    }
+
+    function renderSemanas() {
+      const list = getSemanasFiltradas();
+      const grid = $('semanasGrid');
+      grid.classList.remove('hidden');
+      grid.innerHTML = '';
+
+      if (list.length === 0) { $('semanasEmpty').classList.remove('hidden'); return; }
+      $('semanasEmpty').classList.add('hidden');
+
+      list.forEach((s, i) => {
+        const archs = archivos.filter(a => a.semana_id === s.id);
+        const arcsFiltrados = filtroTipo === 'all' ? archs : archs.filter(a => a.tipo === filtroTipo);
+        const tipos = [...new Set(archs.map(a => a.tipo))];
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.animationDelay = `${i * .05}s`;
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+          <div class="semana-card-header">
+            <div class="semana-num">SEMANA ${s.numero_semana}</div>
+            <div class="semana-title" title="${escHtml(s.titulo)}">${escHtml(s.titulo)}</div>
+            <div class="semana-desc">${escHtml(s.descripcion || 'Sin descripción')}</div>
+          </div>
+          <div class="semana-files-area">
+            <div class="semana-files-label">
+              ARCHIVOS
+              <span class="files-count-badge">${archs.length}</span>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">
+              ${tipos.map(t => {
+                const ic = obtenerIconoTipo(t);
+                return `<span class="badge ${t === 'pdf' ? 'red' : t === 'imagen' ? 'blue' : t === 'word' ? 'blue' : t === 'excel' ? 'green' : 'neon'}"><i class="${ic.icon}"></i> ${ic.label}</span>`;
+              }).join('') || '<span style="font-size:.68rem;color:var(--text-3)">Sin archivos</span>'}
+            </div>
+            <div style="font-size:.75rem;color:var(--neon);display:flex;align-items:center;gap:6px;margin-top:8px">
+              <i class="fa-solid fa-arrow-right"></i> Ver ${arcsFiltrados.length} archivo${arcsFiltrados.length !== 1 ? 's' : ''}
+            </div>
+          </div>`;
+        card.addEventListener('click', () => abrirDetalle(s.id));
+        grid.appendChild(card);
+      });
+    }
+
+    function abrirDetalle(id) {
+      semanaActual = semanas.find(s => s.id === id);
+      if (!semanaActual) return;
+      detailFiltro = 'all';
+      $('detailNum').textContent  = `SEMANA ${semanaActual.numero_semana}`;
+      $('detailTitle').textContent = semanaActual.titulo;
+      $('detailDesc').textContent  = semanaActual.descripcion || '';
+      document.querySelectorAll('#detailFilters .filter-chip').forEach(b => b.classList.remove('active'));
+      $('detailFilters').querySelector('[data-type="all"]').classList.add('active');
+      renderDetailFiles();
+      $('semanaDetail').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function renderDetailFiles() {
+      const archs = archivos
+        .filter(a => a.semana_id === semanaActual?.id && (detailFiltro === 'all' || a.tipo === detailFiltro));
+      const grid = $('detailFilesGrid');
+      const empty = $('detailEmpty');
+      grid.innerHTML = '';
+
+      if (archs.length === 0) { empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      archs.forEach(a => {
+        const ic = obtenerIconoTipo(a.tipo);
+        const row = document.createElement('div');
+        row.className = 'detail-file-row';
+        row.innerHTML = `
+          <div class="file-icon-box ${a.tipo}"><i class="${ic.icon}"></i></div>
+          <div class="detail-file-info">
+            <div class="detail-file-name" title="${escHtml(a.nombre)}">${escHtml(a.nombre)}</div>
+            <div class="detail-file-meta">${ic.label.toUpperCase()}</div>
+          </div>
+          <div class="detail-file-actions">
+            <button class="btn-icon" title="Vista previa" onclick="event.stopPropagation();abrirPreview('${escAttr(a.url)}','${escAttr(a.nombre)}','${a.tipo}')">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <a href="${escAttr(a.url)}" download="${escAttr(a.nombre)}" class="btn-icon" title="Descargar" onclick="event.stopPropagation()">
+              <i class="fa-solid fa-download"></i>
+            </a>
+          </div>`;
+        row.addEventListener('click', () => abrirPreview(a.url, a.nombre, a.tipo));
+        grid.appendChild(row);
+      });
+    }
+
+    // Cerrar detalle
+    $('closeDetail').addEventListener('click', () => {
+      $('semanaDetail').classList.add('hidden');
+      document.body.style.overflow = '';
+    });
+    $('semanaDetail').addEventListener('click', e => {
+      if (e.target === $('semanaDetail')) { $('semanaDetail').classList.add('hidden'); document.body.style.overflow = ''; }
+    });
+
+    // Filtros tipo de detalle
+    document.querySelectorAll('#detailFilters .filter-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#detailFilters .filter-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        detailFiltro = btn.dataset.type;
+        renderDetailFiles();
+      });
+    });
+
+    // Filtros generales
+    document.querySelectorAll('#typeFilters .filter-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#typeFilters .filter-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filtroTipo = btn.dataset.type;
+        renderSemanas();
+      });
+    });
+
+    // Búsqueda
+    let deb;
+    $('semanaSearch').addEventListener('input', () => {
+      clearTimeout(deb);
+      deb = setTimeout(() => { searchTerm = $('semanaSearch').value.trim(); renderSemanas(); }, 280);
+    });
+
+    // Orden
+    $('sortSelect').addEventListener('change', () => { sortMode = $('sortSelect').value; renderSemanas(); });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await verificarSesion();
+      renderNavbar('semanas');
+      renderModalLogin(() => { renderNavbar('semanas'); });
+      await cargarSemanas();
+    });
+  </script>
+</body>
+</html>

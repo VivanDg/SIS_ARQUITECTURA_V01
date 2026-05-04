@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin | Arquitectura de Software UPLA</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ─── Página sin acceso ─────────────────── */
+    .no-access {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+      padding: 40px;
+    }
+    .no-access i { font-size: 3rem; color: var(--red); opacity: .6; }
+    .no-access h2 { font-family: var(--font-h); font-size: 1.5rem; }
+    .no-access p { color: var(--text-2); font-size: .88rem; }
+
+    /* ─── Layout admin ──────────────────────── */
+    .admin-page { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ─── Tab panels ────────────────────────── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Upload dropzone ───────────────────── */
+    .upload-preview-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px;
+      background: var(--neon-dim);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      font-size: .82rem; color: var(--text-1);
+    }
+    .upload-preview-row i { font-size: 1.2rem; }
+
+    /* ─── Semana card admin ─────────────────── */
+    .semana-row-admin {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all var(--tr) var(--ease);
+      margin-bottom: 8px;
+    }
+    .semana-row-admin:hover { border-color: var(--border-glow); }
+    .semana-row-num {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--neon-dim); border: 1px solid var(--border-glow);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-m); font-size: .9rem; color: var(--neon);
+      flex-shrink: 0; font-weight: 700;
+    }
+    .semana-row-info { flex: 1; min-width: 0; }
+    .semana-row-title { font-weight: 600; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .semana-row-desc { font-size: .72rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .semana-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ─── Archivos tabla ────────────────────── */
+    .archivo-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .archivo-row:last-child { border-bottom: none; }
+    .archivo-row:hover { background: rgba(255,255,255,.02); }
+    .archivo-semana-label {
+      font-size: .65rem; font-family: var(--font-m);
+      color: var(--blue); padding: 2px 7px;
+      background: var(--blue-dim); border-radius: 5px;
+      border: 1px solid var(--border-blue);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* ─── Dashboard stats ───────────────────── */
+    .admin-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+
+    /* ─── Section card ──────────────────────── */
+    .admin-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .admin-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .admin-card-title {
+      font-family: var(--font-h);
+      font-size: .9rem; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .admin-card-body { padding: 16px 20px; }
+  </style>
+</head>
+<body>
+  <nav id="navbar"></nav>
+
+  <!-- Sin acceso (visible si no hay login) -->
+  <div id="noAccess" class="no-access hidden">
+    <i class="fa-solid fa-shield-halved"></i>
+    <h2>Acceso restringido</h2>
+    <p>Debes iniciar sesión como administrador para acceder a este panel.</p>
+    <button class="btn-primary" id="btnLoginNoAccess">
+      <i class="fa-solid fa-lock"></i> Iniciar sesión
+    </button>
+    <a href="index.html" class="btn-secondary"><i class="fa-solid fa-house"></i> Volver al inicio</a>
+  </div>
+
+  <!-- Panel admin (visible si hay login) -->
+  <div id="adminPanel" class="hidden admin-page" style="padding-top:var(--nav-h)">
+
+    <div class="admin-layout">
+      <!-- SIDEBAR ADMIN -->
+      <aside class="admin-sidebar">
+        <div class="admin-nav-label">PANEL</div>
+        <div class="admin-nav-item active" data-tab="dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</div>
+        <div class="admin-nav-label">GESTIÓN</div>
+        <div class="admin-nav-item" data-tab="semanas"><i class="fa-solid fa-layer-group"></i> Semanas</div>
+        <div class="admin-nav-item" data-tab="archivos"><i class="fa-solid fa-folder-open"></i> Archivos</div>
+        <div class="admin-nav-label">SUBIDA</div>
+        <div class="admin-nav-item" data-tab="subir"><i class="fa-solid fa-cloud-arrow-up"></i> Subir archivo</div>
+      </aside>
+
+      <!-- CONTENIDO ADMIN -->
+      <div class="admin-content">
+
+        <!-- ═══ TAB: DASHBOARD ══════════════════ -->
+        <div class="tab-panel active" id="tab-dashboard">
+          <div class="admin-section-header">
+            <div>
+              <div class="section-tag">PANEL DE CONTROL</div>
+              <h2 class="section-title" style="font-size:1.4rem">Dashboard</h2>
+            </div>
+          </div>
+          <div class="admin-stats" id="adminStats">
+            <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+            <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+            <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+            <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <span class="admin-card-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--neon)"></i> Últimas actividades</span>
+            </div>
+            <div class="admin-card-body" id="recentActivity">
+              <div style="color:var(--text-3);font-size:.8rem;text-align:center;padding:16px">Cargando…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: SEMANAS ════════════════════ -->
+        <div class="tab-panel" id="tab-semanas">
+          <div class="admin-section-header">
+            <div>
+              <div class="section-tag">GESTIÓN</div>
+              <h2 class="section-title" style="font-size:1.4rem">Semanas</h2>
+            </div>
+            <button class="btn-primary" id="btnNuevaSemana">
+              <i class="fa-solid fa-plus"></i> Nueva semana
+            </button>
+          </div>
+          <div id="semanasList">
+            <div class="skeleton" style="height:60px;border-radius:10px;margin-bottom:8px"></div>
+            <div class="skeleton" style="height:60px;border-radius:10px;margin-bottom:8px"></div>
+          </div>
+          <div class="empty-state hidden" id="semanasAdminEmpty">
+            <i class="fa-solid fa-layer-group"></i>
+            <h3>Sin semanas</h3>
+            <p>Crea la primera semana del curso.</p>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: ARCHIVOS ═══════════════════ -->
+        <div class="tab-panel" id="tab-archivos">
+          <div class="admin-section-header">
+            <div>
+              <div class="section-tag">GESTIÓN</div>
+              <h2 class="section-title" style="font-size:1.4rem">Todos los archivos</h2>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <div class="search-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="archivoSearch" placeholder="Buscar archivo…"/>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px">
+                <i class="fa-solid fa-filter" style="color:var(--text-3);font-size:.78rem"></i>
+                <select id="archivoTipoFilter" style="background:none;border:none;outline:none;color:var(--text-1);font-size:.78rem;cursor:pointer">
+                  <option value="all">Todos</option>
+                  <option value="pdf">PDF</option>
+                  <option value="imagen">Imagen</option>
+                  <option value="word">Word</option>
+                  <option value="excel">Excel</option>
+                  <option value="otro">Otros</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="admin-card">
+            <div id="archivosListWrap">
+              <div id="archivosList"></div>
+              <div class="empty-state hidden" id="archivosAdminEmpty">
+                <i class="fa-solid fa-folder-open"></i>
+                <h3>Sin archivos</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: SUBIR ══════════════════════ -->
+        <div class="tab-panel" id="tab-subir">
+          <div class="admin-section-header">
+            <div>
+              <div class="section-tag">CARGA</div>
+              <h2 class="section-title" style="font-size:1.4rem">Subir archivo</h2>
+            </div>
+          </div>
+          <div class="admin-card" style="max-width:600px">
+            <div class="admin-card-header">
+              <span class="admin-card-title"><i class="fa-solid fa-cloud-arrow-up" style="color:var(--blue)"></i> Cargar nuevo archivo</span>
+            </div>
+            <div class="admin-card-body">
+              <form class="modal-form" id="formSubir" style="gap:18px">
+                <div class="input-group">
+                  <label>Semana destino</label>
+                  <div class="input-wrap">
+                    <i class="fa-solid fa-calendar-week"></i>
+                    <select id="subirSemana" required>
+                      <option value="">-- Selecciona una semana --</option>
+                    </select>
+                  </div>
+                </div>
+                <!-- Drop zone -->
+                <div class="input-group">
+                  <label>Archivo</label>
+                  <div class="drop-zone" id="dropZone">
+                    <input type="file" id="fileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.mp4"/>
+                    <div class="drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <p>Arrastra aquí o <span onclick="$('fileInput').click()">selecciona un archivo</span></p>
+                    <small>PDF, imágenes, Word, Excel, PowerPoint, ZIP…</small>
+                  </div>
+                  <div id="fileSelectedPreview" class="hidden"></div>
+                </div>
+                <!-- Progreso -->
+                <div class="progress-wrap hidden" id="uploadProgressWrap">
+                  <div class="progress-info">
+                    <span id="progressName">Subiendo…</span>
+                    <span class="pct" id="progressPct">0%</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="progressFill"></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <button type="submit" class="btn-primary" id="btnSubir" disabled>
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span id="btnSubirText">Subir archivo</span>
+                    <i class="fa-solid fa-spinner fa-spin hidden" id="subirSpinner"></i>
+                  </button>
+                  <button type="button" class="btn-secondary" id="btnResetSubir">Limpiar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /admin-content -->
+    </div><!-- /admin-layout -->
+
+    <footer id="mainFooter"></footer>
+  </div>
+
+  <!-- MODAL SEMANA (crear/editar) -->
+  <div class="modal-overlay hidden" id="modalSemana">
+    <div class="modal-card">
+      <button class="modal-close" id="closeModalSemana"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+        <div class="modal-icon"><i class="fa-solid fa-calendar-plus"></i></div>
+        <h2 id="semanaModalTitle">Nueva Semana</h2>
+      </div>
+      <form class="modal-form" id="formSemana">
+        <input type="hidden" id="semanaEditId"/>
+        <div class="grid-2" style="gap:12px">
+          <div class="input-group">
+            <label>Número de semana</label>
+            <div class="input-wrap"><i class="fa-solid fa-hashtag"></i><input type="number" id="semanaNumero" min="1" max="20" required placeholder="1"/></div>
+          </div>
+          <div class="input-group">
+            <label>Título</label>
+            <div class="input-wrap"><i class="fa-solid fa-heading"></i><input type="text" id="semanaTitulo" required placeholder="Título de la semana"/></div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Descripción</label>
+          <div class="input-wrap textarea-top"><i class="fa-solid fa-align-left"></i><textarea id="semanaDesc" rows="3" placeholder="Describe el contenido de la semana…"></textarea></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelModalSemana">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSaveSemana">
+            <span id="saveSemanaText">Guardar</span>
+            <i class="fa-solid fa-spinner fa-spin hidden" id="saveSemanaSpinner"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="config.js"></script>
+  <script>
+    let semanas = [], archivos = [];
+    let selectedFile = null;
+    let editSemanaId = null;
+
+    // ── PROTECCIÓN DE RUTA ────────────────────────────────────
+    async function protegerRuta() {
+      const logueado = await verificarSesion();
+      if (!logueado) {
+        $('noAccess').classList.remove('hidden');
+        renderNavbar('admin');
+        $('btnLoginNoAccess').addEventListener('click', () => {
+          renderModalLogin(async (user) => {
+            $('noAccess').classList.add('hidden');
+            $('adminPanel').classList.remove('hidden');
+            renderNavbar('admin');
+            await cargarTodo();
+          });
+          $('modalLogin').classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        });
+        return false;
+      }
+      $('adminPanel').classList.remove('hidden');
+      return true;
+    }
+
+    // ── CARGAR DATOS ──────────────────────────────────────────
+    async function cargarTodo() {
+      try {
+        const [{ data: s }, { data: a }] = await Promise.all([
+          sb.from('semanas').select('*').order('numero_semana'),
+          sb.from('archivos').select('*').order('created_at', { ascending: false }),
+        ]);
+        semanas  = s || [];
+        archivos = a || [];
+        renderDashboard();
+        renderSemanas();
+        renderArchivos();
+        poblarSelectSemanas();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Error al cargar datos.', 'error');
+      }
+    }
+
+    // ── DASHBOARD ─────────────────────────────────────────────
+    function renderDashboard() {
+      $('adminStats').innerHTML = `
+        <div class="stat-card"><div class="stat-label">SEMANAS</div><div class="stat-val neon">${semanas.length}</div></div>
+        <div class="stat-card"><div class="stat-label">ARCHIVOS</div><div class="stat-val neon">${archivos.length}</div></div>
+        <div class="stat-card"><div class="stat-label">PDFs</div><div class="stat-val neon">${archivos.filter(a=>a.tipo==='pdf').length}</div></div>
+        <div class="stat-card"><div class="stat-label">IMÁGENES</div><div class="stat-val neon">${archivos.filter(a=>a.tipo==='imagen').length}</div></div>`;
+
+      const rec = $('recentActivity');
+      const recent = archivos.slice(0, 5);
+      if (recent.length === 0) { rec.innerHTML = `<div style="color:var(--text-3);font-size:.8rem;text-align:center">Sin actividad reciente</div>`; return; }
+      rec.innerHTML = recent.map(a => {
+        const sem = semanas.find(s => s.id === a.semana_id);
+        const ic  = obtenerIconoTipo(a.tipo);
+        return `<div class="archivo-row">
+          <div class="file-icon-box ${a.tipo}"><i class="${ic.icon}"></i></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(a.nombre)}</div>
+            <div style="font-size:.65rem;color:var(--text-3);font-family:var(--font-m)">${sem ? `Sem. ${sem.numero_semana}` : '—'} · ${ic.label}</div>
+          </div>
+          <span class="archivo-semana-label">${sem ? escHtml(sem.titulo) : '—'}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ── SEMANAS ───────────────────────────────────────────────
+    function renderSemanas() {
+      const list = $('semanasList');
+      list.innerHTML = '';
+      if (semanas.length === 0) { $('semanasAdminEmpty').classList.remove('hidden'); return; }
+      $('semanasAdminEmpty').classList.add('hidden');
+      semanas.forEach(s => {
+        const archs = archivos.filter(a => a.semana_id === s.id).length;
+        const row = document.createElement('div');
+        row.className = 'semana-row-admin';
+        row.innerHTML = `
+          <div class="semana-row-num">${s.numero_semana}</div>
+          <div class="semana-row-info">
+            <div class="semana-row-title">${escHtml(s.titulo)}</div>
+            <div class="semana-row-desc">${escHtml(s.descripcion || 'Sin descripción')} · <span style="color:var(--neon)">${archs} archivos</span></div>
+          </div>
+          <div class="semana-row-actions">
+            <button class="btn-icon edit" title="Editar" onclick="editarSemana('${s.id}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-icon del"  title="Eliminar" onclick="eliminarSemana('${s.id}','${escAttr(s.titulo)}')"><i class="fa-solid fa-trash"></i></button>
+          </div>`;
+        list.appendChild(row);
+      });
+    }
+
+    function abrirNuevaSemana() {
+      editSemanaId = null;
+      $('semanaModalTitle').textContent = 'Nueva Semana';
+      $('formSemana').reset();
+      $('semanaEditId').value = '';
+      $('modalSemana').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function editarSemana(id) {
+      const s = semanas.find(x => x.id === id);
+      if (!s) return;
+      editSemanaId = id;
+      $('semanaModalTitle').textContent = 'Editar Semana';
+      $('semanaEditId').value  = s.id;
+      $('semanaNumero').value  = s.numero_semana;
+      $('semanaTitulo').value  = s.titulo;
+      $('semanaDesc').value    = s.descripcion || '';
+      $('modalSemana').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+    window.editarSemana = editarSemana;
+
+    async function eliminarSemana(id, titulo) {
+      if (!confirm(`¿Eliminar la semana "${titulo}" y todos sus archivos?`)) return;
+      try {
+        // Eliminar archivos del storage
+        const archs = archivos.filter(a => a.semana_id === id);
+        for (const a of archs) {
+          const ruta = a.url.split(`/${BUCKET_ARCHIVOS}/`)[1];
+          if (ruta) await sb.storage.from(BUCKET_ARCHIVOS).remove([ruta]);
+        }
+        await sb.from('semanas').delete().eq('id', id);
+        mostrarToast('Semana eliminada.', 'success');
+        await cargarTodo();
+      } catch (e) { mostrarToast('Error al eliminar.', 'error'); }
+    }
+    window.eliminarSemana = eliminarSemana;
+
+    $('formSemana').addEventListener('submit', async e => {
+      e.preventDefault();
+      $('saveSemanaText').classList.add('hidden');
+      $('saveSemanaSpinner').classList.remove('hidden');
+      $('btnSaveSemana').disabled = true;
+      const datos = {
+        numero_semana: parseInt($('semanaNumero').value),
+        titulo:        $('semanaTitulo').value.trim(),
+        descripcion:   $('semanaDesc').value.trim(),
+      };
+      try {
+        if (editSemanaId) {
+          await sb.from('semanas').update(datos).eq('id', editSemanaId);
+          mostrarToast('Semana actualizada.', 'success');
+        } else {
+          await sb.from('semanas').insert(datos);
+          // Registrar actividad
+          const hoy = new Date().toISOString().split('T')[0];
+          await sb.from('actividad').upsert({ fecha: hoy, nivel: 2 }, { onConflict: 'fecha' });
+          mostrarToast('Semana creada.', 'success');
+        }
+        $('modalSemana').classList.add('hidden');
+        document.body.style.overflow = '';
+        await cargarTodo();
+      } catch (err) { mostrarToast('Error: ' + (err.message||''), 'error'); }
+      finally {
+        $('saveSemanaText').classList.remove('hidden');
+        $('saveSemanaSpinner').classList.add('hidden');
+        $('btnSaveSemana').disabled = false;
+      }
+    });
+
+    // ── ARCHIVOS ──────────────────────────────────────────────
+    function renderArchivos(filtroTipo = 'all', searchTerm = '') {
+      const list = $('archivosList');
+      let lista = archivos.filter(a => {
+        const matchTipo = filtroTipo === 'all' || a.tipo === filtroTipo;
+        const matchSearch = !searchTerm || a.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchTipo && matchSearch;
+      });
+      list.innerHTML = '';
+      if (lista.length === 0) { $('archivosAdminEmpty').classList.remove('hidden'); return; }
+      $('archivosAdminEmpty').classList.add('hidden');
+      lista.forEach(a => {
+        const sem = semanas.find(s => s.id === a.semana_id);
+        const ic  = obtenerIconoTipo(a.tipo);
+        const row = document.createElement('div');
+        row.className = 'archivo-row';
+        row.innerHTML = `
+          <div class="file-icon-box ${a.tipo}"><i class="${ic.icon}"></i></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(a.nombre)}">${escHtml(a.nombre)}</div>
+            <div style="font-size:.65rem;color:var(--text-3);font-family:var(--font-m)">${ic.label} · ${sem ? `Semana ${sem.numero_semana}` : '—'}</div>
+          </div>
+          ${sem ? `<span class="archivo-semana-label">${escHtml(sem.titulo)}</span>` : ''}
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <a href="${escAttr(a.url)}" target="_blank" class="btn-icon" title="Ver"><i class="fa-solid fa-eye"></i></a>
+            <a href="${escAttr(a.url)}" download="${escAttr(a.nombre)}" class="btn-icon" title="Descargar"><i class="fa-solid fa-download"></i></a>
+            <button class="btn-icon del" title="Eliminar" onclick="eliminarArchivo('${a.id}','${escAttr(a.nombre)}','${escAttr(a.url)}')"><i class="fa-solid fa-trash"></i></button>
+          </div>`;
+        list.appendChild(row);
+      });
+    }
+
+    async function eliminarArchivo(id, nombre, url) {
+      if (!confirm(`¿Eliminar "${nombre}"?`)) return;
+      try {
+        const ruta = url.split(`/${BUCKET_ARCHIVOS}/`)[1];
+        if (ruta) await sb.storage.from(BUCKET_ARCHIVOS).remove([ruta]);
+        await sb.from('archivos').delete().eq('id', id);
+        mostrarToast('Archivo eliminado.', 'success');
+        await cargarTodo();
+      } catch (e) { mostrarToast('Error al eliminar.', 'error'); }
+    }
+    window.eliminarArchivo = eliminarArchivo;
+
+    // Búsqueda y filtro de archivos
+    let debArch;
+    $('archivoSearch').addEventListener('input', () => {
+      clearTimeout(debArch);
+      debArch = setTimeout(() => {
+        renderArchivos($('archivoTipoFilter').value, $('archivoSearch').value.trim());
+      }, 280);
+    });
+    $('archivoTipoFilter').addEventListener('change', () => {
+      renderArchivos($('archivoTipoFilter').value, $('archivoSearch').value.trim());
+    });
+
+    // ── SUBIDA DE ARCHIVOS ────────────────────────────────────
+    function poblarSelectSemanas() {
+      const sel = $('subirSemana');
+      sel.innerHTML = '<option value="">-- Selecciona una semana --</option>';
+      semanas.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `Semana ${s.numero_semana} — ${s.titulo}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function manejarArchivoSeleccionado(file) {
+      selectedFile = file;
+      const prev = $('fileSelectedPreview');
+      const ic = obtenerIconoTipo(detectarTipo(file.name));
+      prev.classList.remove('hidden');
+      prev.innerHTML = `
+        <div class="upload-preview-row">
+          <i class="${ic.icon}" style="color:var(--neon)"></i>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.82rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(file.name)}</div>
+            <div style="font-size:.67rem;color:var(--text-2)">${formatearTamaño(file.size)} · ${ic.label}</div>
+          </div>
+          <button type="button" onclick="resetFile()" class="btn-icon-sm" title="Quitar"><i class="fa-solid fa-xmark"></i></button>
+        </div>`;
+      $('btnSubir').disabled = false;
+    }
+
+    function resetFile() {
+      selectedFile = null;
+      $('fileInput').value = '';
+      $('fileSelectedPreview').classList.add('hidden');
+      $('fileSelectedPreview').innerHTML = '';
+      $('btnSubir').disabled = true;
+    }
+    window.resetFile = resetFile;
+
+    $('dropZone').addEventListener('click', () => $('fileInput').click());
+    $('fileInput').addEventListener('change', () => { if ($('fileInput').files[0]) manejarArchivoSeleccionado($('fileInput').files[0]); });
+    $('dropZone').addEventListener('dragover', e => { e.preventDefault(); $('dropZone').classList.add('over'); });
+    $('dropZone').addEventListener('dragleave', () => $('dropZone').classList.remove('over'));
+    $('dropZone').addEventListener('drop', e => {
+      e.preventDefault(); $('dropZone').classList.remove('over');
+      if (e.dataTransfer.files[0]) manejarArchivoSeleccionado(e.dataTransfer.files[0]);
+    });
+    $('btnResetSubir').addEventListener('click', resetFile);
+
+    $('formSubir').addEventListener('submit', async e => {
+      e.preventDefault();
+      const semanaId = $('subirSemana').value;
+      if (!selectedFile || !semanaId) { mostrarToast('Selecciona semana y archivo.', 'warn'); return; }
+
+      $('btnSubirText').classList.add('hidden');
+      $('subirSpinner').classList.remove('hidden');
+      $('btnSubir').disabled = true;
+      $('uploadProgressWrap').classList.remove('hidden');
+
+      // Animación de progreso simulada
+      let pct = 0;
+      const interval = setInterval(() => {
+        pct = Math.min(pct + Math.random() * 15, 88);
+        $('progressFill').style.width = `${pct}%`;
+        $('progressPct').textContent = `${Math.round(pct)}%`;
+        $('progressName').textContent = selectedFile.name;
+      }, 200);
+
+      try {
+        const ext    = selectedFile.name.split('.').pop().toLowerCase();
+        const nombre = `${Date.now()}-${selectedFile.name.replace(/[^a-z0-9._-]/gi, '_')}`;
+        const ruta   = `${semanaId}/${nombre}`;
+
+        const { error: upErr } = await sb.storage.from(BUCKET_ARCHIVOS).upload(ruta, selectedFile, { cacheControl: '3600', upsert: false });
+        if (upErr) throw upErr;
+
+        const { data: urlData } = sb.storage.from(BUCKET_ARCHIVOS).getPublicUrl(ruta);
+        const tipo = detectarTipo(selectedFile.name);
+
+        await sb.from('archivos').insert({
+          semana_id: semanaId, nombre: selectedFile.name, tipo, url: urlData.publicUrl,
+        });
+
+        // Registrar actividad
+        const hoy = new Date().toISOString().split('T')[0];
+        await sb.from('actividad').upsert({ fecha: hoy, nivel: 3 }, { onConflict: 'fecha' });
+
+        clearInterval(interval);
+        $('progressFill').style.width = '100%';
+        $('progressPct').textContent = '100%';
+        await esperar(400);
+
+        mostrarToast('Archivo subido correctamente.', 'success');
+        resetFile();
+        $('formSubir').reset();
+        await cargarTodo();
+      } catch (err) {
+        clearInterval(interval);
+        mostrarToast('Error al subir: ' + (err.message || 'desconocido'), 'error');
+      } finally {
+        $('btnSubirText').classList.remove('hidden');
+        $('subirSpinner').classList.add('hidden');
+        $('btnSubir').disabled = false;
+        $('uploadProgressWrap').classList.add('hidden');
+        $('progressFill').style.width = '0%';
+      }
+    });
+
+    // ── TABS NAV ──────────────────────────────────────────────
+    document.querySelectorAll('.admin-nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const tab = item.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        $(`tab-${tab}`)?.classList.add('active');
+      });
+    });
+
+    // ── MODAL SEMANA ──────────────────────────────────────────
+    $('btnNuevaSemana').addEventListener('click', abrirNuevaSemana);
+    $('closeModalSemana').addEventListener('click', () => { $('modalSemana').classList.add('hidden'); document.body.style.overflow = ''; });
+    $('cancelModalSemana').addEventListener('click', () => { $('modalSemana').classList.add('hidden'); document.body.style.overflow = ''; });
+    $('modalSemana').addEventListener('click', e => { if (e.target === $('modalSemana')) { $('modalSemana').classList.add('hidden'); document.body.style.overflow = ''; }});
+
+    // ── INIT ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ok = await protegerRuta();
+      if (!ok) return;
+      renderNavbar('admin');
+      await cargarTodo();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.git/
+*.log
+.vercel/
+.DS_Store
+.env*.local
+stitch_modern_tech_dashboard_portfolio/

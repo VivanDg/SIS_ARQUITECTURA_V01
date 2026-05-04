@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Sobre mí | Arquitectura de Software UPLA</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ── Sobre mí extra styles ── */
+    .sobre-hero {
+      background: linear-gradient(135deg, var(--bg-surface), var(--bg-base));
+      border-bottom: 1px solid var(--border);
+      padding: 40px 0 32px;
+    }
+    .profile-main { padding: 40px 0; }
+
+    /* Edit buttons overlay */
+    .edit-overlay {
+      position: absolute; top: 0; right: 0;
+    }
+    .btn-edit-profile {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 8px;
+      background: var(--neon-dim); border: 1px solid var(--border-glow);
+      color: var(--neon); font-size: .72rem; cursor: pointer;
+      transition: all var(--tr);
+    }
+    .btn-edit-profile:hover { background: rgba(0,255,135,.2); }
+
+    /* Activity calendar */
+    .activity-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .activity-label {
+      font-size: .72rem; font-family: var(--font-m);
+      letter-spacing: .08em; color: var(--text-3);
+      margin-bottom: 16px; display: flex;
+      align-items: center; justify-content: space-between;
+    }
+    .activity-label span { color: var(--neon); }
+
+    /* Month labels */
+    .activity-months {
+      display: flex; gap: 0; margin-bottom: 4px;
+      font-size: .6rem; color: var(--text-3);
+      font-family: var(--font-m); overflow: hidden;
+    }
+    .month-label { flex: 1; text-align: left; }
+
+    /* Stats cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* Proyectos area */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    /* Modal editar perfil */
+    .modal-lg { max-width: 620px; }
+    .avatar-upload-zone {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 2px dashed var(--border-blue);
+      background: var(--blue-dim);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; margin: 0 auto 8px; font-size: 1.5rem; color: var(--blue);
+      transition: all var(--tr);
+    }
+    .avatar-upload-zone:hover { border-color: var(--blue); background: rgba(14,165,233,.15); }
+    .avatar-preview-wrap { text-align: center; margin-bottom: 8px; }
+    .avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-glow); }
+
+    /* Estado proyecto badge */
+    .estado-badge {
+      font-size: .63rem; padding: 2px 9px; border-radius: 100px;
+      font-family: var(--font-m);
+    }
+    .estado-completado { background: rgba(34,197,94,.1); color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+    .estado-desarrollo  { background: rgba(14,165,233,.1); color: var(--blue); border: 1px solid rgba(14,165,233,.25); }
+    .estado-pausa       { background: rgba(251,191,36,.1); color: var(--yellow); border: 1px solid rgba(251,191,36,.25); }
+
+    /* Tooltip actividad */
+    .activity-cell { position: relative; }
+    .activity-cell::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 4px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 8px;
+      font-size: .6rem; white-space: nowrap;
+      color: var(--text-1); font-family: var(--font-m);
+      pointer-events: none; opacity: 0;
+      transition: opacity .15s; z-index: 10;
+    }
+    .activity-cell:hover::after { opacity: 1; }
+  </style>
+</head>
+<body>
+  <nav id="navbar"></nav>
+
+  <div class="page">
+    <div class="page-body">
+
+      <!-- HERO -->
+      <section class="sobre-hero">
+        <div class="container">
+          <div class="section-tag">PORTAFOLIO ACADÉMICO</div>
+          <h1 class="section-title" style="margin-top:6px">
+            Perfil del <span class="gradient-text">Estudiante</span>
+          </h1>
+        </div>
+      </section>
+
+      <section class="profile-main">
+        <div class="container">
+          <div class="profile-section">
+
+            <!-- SIDEBAR PERFIL -->
+            <div>
+              <div class="profile-card" id="profileCard">
+                <!-- Se renderiza dinámicamente -->
+                <div class="skeleton" style="width:110px;height:110px;border-radius:50%;margin:0 auto 16px"></div>
+                <div class="skeleton" style="width:70%;height:14px;border-radius:6px;margin:0 auto 8px"></div>
+                <div class="skeleton" style="width:50%;height:10px;border-radius:6px;margin:0 auto"></div>
+              </div>
+            </div>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <div>
+
+              <!-- ESTADÍSTICAS -->
+              <div class="stats-row" id="statsRow">
+                <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+                <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+                <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+                <div class="skeleton" style="height:90px;border-radius:var(--radius-lg)"></div>
+              </div>
+
+              <!-- ACTIVIDAD -->
+              <div class="activity-section">
+                <div class="activity-label">
+                  <span>ACTIVIDAD</span>
+                  <span id="actividadTotal">0 contribuciones este año</span>
+                </div>
+                <div class="activity-months" id="activityMonths"></div>
+                <div class="activity-grid" id="activityGrid"></div>
+                <div class="activity-legend">
+                  Menos
+                  <div class="legend-cells">
+                    <div class="legend-cell"></div>
+                    <div class="legend-cell"></div>
+                    <div class="legend-cell"></div>
+                    <div class="legend-cell"></div>
+                  </div>
+                  Más
+                </div>
+              </div>
+
+              <!-- PROYECTOS -->
+              <div>
+                <div class="section-header" style="margin-bottom:16px">
+                  <div>
+                    <div class="section-tag">PORTAFOLIO</div>
+                    <h2 class="section-title" style="font-size:1.3rem">Proyectos</h2>
+                  </div>
+                  <button class="btn-primary hidden" id="btnAddProyecto">
+                    <i class="fa-solid fa-plus"></i> Agregar
+                  </button>
+                </div>
+                <div class="projects-grid" id="projectsGrid">
+                  <div class="skeleton" style="height:160px;border-radius:var(--radius-lg)"></div>
+                  <div class="skeleton" style="height:160px;border-radius:var(--radius-lg)"></div>
+                </div>
+                <div class="empty-state hidden" id="projectsEmpty">
+                  <i class="fa-solid fa-code"></i>
+                  <h3>Sin proyectos aún</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+    <footer id="mainFooter"></footer>
+  </div>
+
+  <!-- MODAL EDITAR PERFIL -->
+  <div class="modal-overlay hidden" id="modalEditPerfil">
+    <div class="modal-card modal-lg">
+      <button class="modal-close" id="closeEditPerfil"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+        <div class="modal-icon"><i class="fa-solid fa-user-pen"></i></div>
+        <h2>Editar Perfil</h2>
+      </div>
+      <form class="modal-form" id="formEditPerfil">
+        <div class="avatar-preview-wrap">
+          <div class="avatar-upload-zone" id="avatarZone">
+            <i class="fa-solid fa-camera"></i>
+            <span style="font-size:.6rem;margin-top:4px">Cambiar foto</span>
+          </div>
+          <input type="file" id="avatarInput" accept="image/*" class="hidden"/>
+          <div style="font-size:.65rem;color:var(--text-3);text-align:center">Haz clic para cambiar la foto</div>
+        </div>
+        <div class="grid-2" style="gap:12px">
+          <div class="input-group">
+            <label>Nombre completo</label>
+            <div class="input-wrap"><i class="fa-solid fa-user"></i><input type="text" id="perfilNombre" placeholder="Tu nombre"/></div>
+          </div>
+          <div class="input-group">
+            <label>Carrera</label>
+            <div class="input-wrap"><i class="fa-solid fa-graduation-cap"></i><input type="text" id="perfilCarrera" placeholder="Ingeniería de Sistemas"/></div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Bio</label>
+          <div class="input-wrap textarea-top"><i class="fa-solid fa-pen"></i><textarea id="perfilBio" rows="3" placeholder="Cuéntanos sobre ti…"></textarea></div>
+        </div>
+        <div class="grid-2" style="gap:12px">
+          <div class="input-group">
+            <label>GitHub</label>
+            <div class="input-wrap"><i class="fa-brands fa-github"></i><input type="text" id="perfilGithub" placeholder="github.com/usuario"/></div>
+          </div>
+          <div class="input-group">
+            <label>LinkedIn</label>
+            <div class="input-wrap"><i class="fa-brands fa-linkedin"></i><input type="text" id="perfilLinkedin" placeholder="linkedin.com/in/usuario"/></div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Correo de contacto</label>
+          <div class="input-wrap"><i class="fa-solid fa-envelope"></i><input type="email" id="perfilCorreo" placeholder="tucorreo@upla.edu.pe"/></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelEditPerfil">Cancelar</button>
+          <button type="submit" class="btn-primary" id="savePerfil">
+            <span id="savePerfilText">Guardar cambios</span>
+            <i class="fa-solid fa-spinner fa-spin hidden" id="savePerfilSpinner"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PROYECTO -->
+  <div class="modal-overlay hidden" id="modalProyecto">
+    <div class="modal-card">
+      <button class="modal-close" id="closeModalProyecto"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+        <div class="modal-icon"><i class="fa-solid fa-code"></i></div>
+        <h2 id="proyectoModalTitle">Nuevo Proyecto</h2>
+      </div>
+      <form class="modal-form" id="formProyecto">
+        <input type="hidden" id="proyectoId"/>
+        <div class="input-group">
+          <label>Nombre del proyecto</label>
+          <div class="input-wrap"><i class="fa-solid fa-folder"></i><input type="text" id="proyectoNombre" required placeholder="Mi proyecto…"/></div>
+        </div>
+        <div class="input-group">
+          <label>Descripción</label>
+          <div class="input-wrap textarea-top"><i class="fa-solid fa-align-left"></i><textarea id="proyectoDesc" rows="3" placeholder="¿Qué hace este proyecto?"></textarea></div>
+        </div>
+        <div class="input-group">
+          <label>Tecnologías <span style="color:var(--text-3);font-size:.68rem">(separadas por coma)</span></label>
+          <div class="input-wrap"><i class="fa-solid fa-microchip"></i><input type="text" id="proyectoTechs" placeholder="Python, Django, PostgreSQL"/></div>
+        </div>
+        <div class="grid-2" style="gap:12px">
+          <div class="input-group">
+            <label>Estado</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-circle-half-stroke"></i>
+              <select id="proyectoEstado">
+                <option value="En desarrollo">En desarrollo</option>
+                <option value="Completado">Completado</option>
+                <option value="En pausa">En pausa</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>URL (opcional)</label>
+            <div class="input-wrap"><i class="fa-solid fa-link"></i><input type="url" id="proyectoUrl" placeholder="https://…"/></div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelProyecto">Cancelar</button>
+          <button type="submit" class="btn-primary" id="saveProyecto">
+            <span id="saveProyectoText">Guardar</span>
+            <i class="fa-solid fa-spinner fa-spin hidden" id="saveProyectoSpinner"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="config.js"></script>
+  <script>
+    let perfil = null, proyectos = [], semanas = [], archivos = [], actividadData = [];
+    let editProyectoId = null;
+    let avatarFile = null;
+
+    async function cargarTodo() {
+      try {
+        const [{ data: p }, { data: pr }, { data: s }, { data: a }, { data: act }] = await Promise.all([
+          sb.from('perfil').select('*').limit(1).single(),
+          sb.from('proyectos').select('*').order('created_at', { ascending: false }),
+          sb.from('semanas').select('*'),
+          sb.from('archivos').select('*'),
+          sb.from('actividad').select('*').order('fecha', { ascending: true }),
+        ]);
+        perfil       = p  || {};
+        proyectos    = pr || [];
+        semanas      = s  || [];
+        archivos     = a  || [];
+        actividadData = act || [];
+      } catch (e) {
+        perfil = {}; proyectos = []; semanas = []; archivos = []; actividadData = [];
+      }
+      renderPerfil();
+      renderStats();
+      renderActividad();
+      renderProyectos();
+    }
+
+    function renderPerfil() {
+      const card = $('profileCard');
+      const esAdmin = !!APP.usuario;
+      const avatarHtml = perfil.foto_url
+        ? `<img src="${escHtml(perfil.foto_url)}" class="profile-avatar" alt="Avatar"/>`
+        : `<div class="profile-avatar-placeholder"><i class="fa-solid fa-user-graduate"></i></div>`;
+
+      card.innerHTML = `
+        <div class="profile-avatar-wrap">
+          ${avatarHtml}
+          <div class="profile-status"></div>
+        </div>
+        <h2 class="profile-name">${escHtml(perfil.nombre || 'Estudiante UPLA')}</h2>
+        <div class="profile-role">${escHtml(perfil.carrera || 'Ingeniería de Sistemas')}</div>
+        <p class="profile-bio">${escHtml(perfil.bio || 'Estudiante de Ingeniería de Sistemas en la Universidad Peruana Los Andes.')}</p>
+        <div class="profile-meta">
+          <div class="profile-meta-item"><i class="fa-solid fa-building-columns"></i> UPLA</div>
+          <div class="profile-meta-item"><i class="fa-solid fa-location-dot"></i> ${escHtml(perfil.ubicacion || 'Huancayo, Perú')}</div>
+          ${perfil.correo ? `<div class="profile-meta-item"><i class="fa-solid fa-envelope"></i> ${escHtml(perfil.correo)}</div>` : ''}
+        </div>
+        <div class="profile-links">
+          ${perfil.github   ? `<a href="${escHtml(perfil.github)}"   target="_blank" class="social-btn github"  ><i class="fa-brands fa-github"></i></a>`   : ''}
+          ${perfil.linkedin ? `<a href="${escHtml(perfil.linkedin)}" target="_blank" class="social-btn linkedin"><i class="fa-brands fa-linkedin-in"></i></a>` : ''}
+          ${perfil.correo   ? `<a href="mailto:${escHtml(perfil.correo)}"          class="social-btn facebook" style="font-size:.75rem"><i class="fa-solid fa-envelope"></i></a>` : ''}
+        </div>
+        ${esAdmin ? `<button class="btn-edit-profile" style="margin-top:16px;width:100%;justify-content:center" id="btnEditPerfil">
+          <i class="fa-solid fa-pen-to-square"></i> Editar perfil
+        </button>` : ''}`;
+
+      $('btnEditPerfil')?.addEventListener('click', abrirEditPerfil);
+    }
+
+    function renderStats() {
+      $('statsRow').innerHTML = `
+        <div class="stat-card"><div class="stat-label">SEMANAS</div><div class="stat-val neon">${semanas.length}</div><div class="stat-icon" style="color:var(--neon)"><i class="fa-solid fa-layer-group"></i></div></div>
+        <div class="stat-card"><div class="stat-label">ARCHIVOS</div><div class="stat-val neon">${archivos.length}</div><div class="stat-icon" style="color:var(--blue)"><i class="fa-solid fa-file"></i></div></div>
+        <div class="stat-card"><div class="stat-label">PROYECTOS</div><div class="stat-val neon">${proyectos.length}</div><div class="stat-icon" style="color:var(--purple)"><i class="fa-solid fa-code"></i></div></div>
+        <div class="stat-card"><div class="stat-label">COMPLETADOS</div><div class="stat-val neon">${proyectos.filter(p=>p.estado==='Completado').length}</div><div class="stat-icon" style="color:var(--green)"><i class="fa-solid fa-circle-check"></i></div></div>`;
+    }
+
+    function renderActividad() {
+      // Genera calendario de 53 semanas (371 días)
+      const hoy = new Date();
+      const inicio = new Date(hoy);
+      inicio.setDate(hoy.getDate() - 363); // ~52 semanas atrás
+
+      // Mapear actividad de BD por fecha
+      const actMap = {};
+      actividadData.forEach(a => { actMap[a.fecha] = a.nivel; });
+
+      // Si no hay actividad en BD, generar desde archivos y semanas
+      if (actividadData.length === 0) {
+        archivos.forEach(a => {
+          const d = a.created_at?.split('T')[0];
+          if (d) actMap[d] = Math.min(4, (actMap[d] || 0) + 1);
+        });
+        semanas.forEach(s => {
+          const d = s.created_at?.split('T')[0];
+          if (d) actMap[d] = Math.min(4, (actMap[d] || 0) + 1);
+        });
+      }
+
+      const grid = $('activityGrid');
+      const meses = $('activityMonths');
+      grid.innerHTML = '';
+      meses.innerHTML = '';
+
+      let totalContribs = 0;
+      const mesesNombres = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const mesVisto = new Set();
+      const mesLabels = [];
+
+      for (let i = 0; i <= 363; i++) {
+        const d = new Date(inicio);
+        d.setDate(inicio.getDate() + i);
+        const key = d.toISOString().split('T')[0];
+        const nivel = actMap[key] || 0;
+        const mes = d.getMonth();
+        if (!mesVisto.has(mes)) {
+          mesVisto.add(mes);
+          mesLabels.push({ idx: i, nombre: mesesNombres[mes] });
+        }
+        totalContribs += nivel > 0 ? 1 : 0;
+        const cell = document.createElement('div');
+        cell.className = 'activity-cell';
+        cell.setAttribute('data-level', nivel);
+        cell.setAttribute('data-tip', `${key}: nivel ${nivel}`);
+        grid.appendChild(cell);
+      }
+
+      $('actividadTotal').textContent = `${totalContribs} contribuciones este año`;
+
+      // Mes labels aproximados
+      const cols = 53;
+      mesLabels.forEach(m => {
+        const span = document.createElement('span');
+        span.className = 'month-label';
+        span.textContent = m.nombre;
+        span.style.flex = '0 0 auto';
+        span.style.minWidth = '28px';
+        meses.appendChild(span);
+      });
+    }
+
+    function renderProyectos() {
+      const grid = $('projectsGrid');
+      const empty = $('projectsEmpty');
+      grid.innerHTML = '';
+
+      if (APP.usuario) $('btnAddProyecto').classList.remove('hidden');
+
+      if (proyectos.length === 0) { empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      proyectos.forEach((p, i) => {
+        const techs = (p.tecnologias || '').split(',').map(t => t.trim()).filter(Boolean);
+        const estadoClass = p.estado === 'Completado' ? 'estado-completado' : p.estado === 'En pausa' ? 'estado-pausa' : 'estado-desarrollo';
+        const card = document.createElement('div');
+        card.className = 'project-card';
+        card.style.animationDelay = `${i * .06}s`;
+        card.innerHTML = `
+          <div class="project-title">
+            <span>${escHtml(p.nombre)}</span>
+            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+              <span class="estado-badge ${estadoClass}">${escHtml(p.estado)}</span>
+              ${APP.usuario ? `
+                <button class="btn-icon edit" onclick="editarProyecto('${p.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-icon del"  onclick="eliminarProyecto('${p.id}','${escAttr(p.nombre)}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+              ` : ''}
+            </div>
+          </div>
+          <p class="project-desc">${escHtml(p.descripcion || '')}</p>
+          <div class="tech-tags">
+            ${techs.map(t => `<span class="tech-tag">${escHtml(t)}</span>`).join('')}
+          </div>
+          ${p.url ? `<a href="${escHtml(p.url)}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:.73rem;color:var(--blue);margin-top:12px"><i class="fa-solid fa-arrow-up-right-from-square"></i>Ver proyecto</a>` : ''}`;
+        grid.appendChild(card);
+      });
+    }
+
+    // ── EDITAR PERFIL ─────────────────────────────────────────
+    function abrirEditPerfil() {
+      $('perfilNombre').value   = perfil.nombre   || '';
+      $('perfilCarrera').value  = perfil.carrera  || '';
+      $('perfilBio').value      = perfil.bio      || '';
+      $('perfilGithub').value   = perfil.github   || '';
+      $('perfilLinkedin').value = perfil.linkedin || '';
+      $('perfilCorreo').value   = perfil.correo   || '';
+      avatarFile = null;
+
+      // Avatar preview actual
+      const zone = $('avatarZone');
+      if (perfil.foto_url) {
+        zone.innerHTML = `<img src="${escHtml(perfil.foto_url)}" class="avatar-preview" alt="Avatar"/>`;
+      } else {
+        zone.innerHTML = `<i class="fa-solid fa-camera"></i><span style="font-size:.6rem;margin-top:4px">Cambiar foto</span>`;
+      }
+
+      $('modalEditPerfil').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    $('avatarZone').addEventListener('click', () => $('avatarInput').click());
+    $('avatarInput').addEventListener('change', () => {
+      avatarFile = $('avatarInput').files[0];
+      if (avatarFile) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          $('avatarZone').innerHTML = `<img src="${e.target.result}" class="avatar-preview" alt="preview"/>`;
+        };
+        reader.readAsDataURL(avatarFile);
+      }
+    });
+
+    $('formEditPerfil').addEventListener('submit', async e => {
+      e.preventDefault();
+      $('savePerfilText').classList.add('hidden');
+      $('savePerfilSpinner').classList.remove('hidden');
+      $('savePerfil').disabled = true;
+      try {
+        let fotoUrl = perfil.foto_url || null;
+        if (avatarFile) {
+          const ext = avatarFile.name.split('.').pop();
+          const ruta = `avatar-${Date.now()}.${ext}`;
+          const { error: upErr } = await sb.storage.from(BUCKET_FOTOS).upload(ruta, avatarFile, { upsert: true });
+          if (!upErr) {
+            const { data: ud } = sb.storage.from(BUCKET_FOTOS).getPublicUrl(ruta);
+            fotoUrl = ud.publicUrl;
+          }
+        }
+        const datos = {
+          nombre:   $('perfilNombre').value.trim(),
+          carrera:  $('perfilCarrera').value.trim(),
+          bio:      $('perfilBio').value.trim(),
+          github:   $('perfilGithub').value.trim(),
+          linkedin: $('perfilLinkedin').value.trim(),
+          correo:   $('perfilCorreo').value.trim(),
+          foto_url: fotoUrl,
+        };
+        if (perfil.id) {
+          await sb.from('perfil').update(datos).eq('id', perfil.id);
+        } else {
+          await sb.from('perfil').insert(datos);
+        }
+        mostrarToast('Perfil actualizado.', 'success');
+        $('modalEditPerfil').classList.add('hidden');
+        document.body.style.overflow = '';
+        await cargarTodo();
+      } catch (err) {
+        console.error(err);
+        mostrarToast('Error al guardar perfil.', 'error');
+      } finally {
+        $('savePerfilText').classList.remove('hidden');
+        $('savePerfilSpinner').classList.add('hidden');
+        $('savePerfil').disabled = false;
+      }
+    });
+
+    $('closeEditPerfil').addEventListener('click', () => { $('modalEditPerfil').classList.add('hidden'); document.body.style.overflow = ''; });
+    $('cancelEditPerfil').addEventListener('click', () => { $('modalEditPerfil').classList.add('hidden'); document.body.style.overflow = ''; });
+
+    // ── PROYECTOS CRUD ────────────────────────────────────────
+    $('btnAddProyecto').addEventListener('click', () => {
+      editProyectoId = null;
+      $('proyectoModalTitle').textContent = 'Nuevo Proyecto';
+      $('formProyecto').reset();
+      $('proyectoId').value = '';
+      $('modalProyecto').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    });
+
+    function editarProyecto(id) {
+      const p = proyectos.find(x => x.id === id);
+      if (!p) return;
+      editProyectoId = id;
+      $('proyectoModalTitle').textContent = 'Editar Proyecto';
+      $('proyectoId').value    = p.id;
+      $('proyectoNombre').value = p.nombre || '';
+      $('proyectoDesc').value  = p.descripcion || '';
+      $('proyectoTechs').value = p.tecnologias || '';
+      $('proyectoEstado').value = p.estado || 'En desarrollo';
+      $('proyectoUrl').value   = p.url || '';
+      $('modalProyecto').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+    window.editarProyecto = editarProyecto;
+
+    async function eliminarProyecto(id, nombre) {
+      if (!confirm(`¿Eliminar el proyecto "${nombre}"?`)) return;
+      try {
+        await sb.from('proyectos').delete().eq('id', id);
+        mostrarToast('Proyecto eliminado.', 'success');
+        await cargarTodo();
+      } catch { mostrarToast('Error al eliminar.', 'error'); }
+    }
+    window.eliminarProyecto = eliminarProyecto;
+
+    $('formProyecto').addEventListener('submit', async e => {
+      e.preventDefault();
+      $('saveProyectoText').classList.add('hidden');
+      $('saveProyectoSpinner').classList.remove('hidden');
+      const datos = {
+        nombre:      $('proyectoNombre').value.trim(),
+        descripcion: $('proyectoDesc').value.trim(),
+        tecnologias: $('proyectoTechs').value.trim(),
+        estado:      $('proyectoEstado').value,
+        url:         $('proyectoUrl').value.trim() || null,
+      };
+      try {
+        if (editProyectoId) {
+          await sb.from('proyectos').update(datos).eq('id', editProyectoId);
+          mostrarToast('Proyecto actualizado.', 'success');
+        } else {
+          await sb.from('proyectos').insert(datos);
+          mostrarToast('Proyecto agregado.', 'success');
+        }
+        $('modalProyecto').classList.add('hidden');
+        document.body.style.overflow = '';
+        await cargarTodo();
+      } catch { mostrarToast('Error al guardar.', 'error'); }
+      finally {
+        $('saveProyectoText').classList.remove('hidden');
+        $('saveProyectoSpinner').classList.add('hidden');
+      }
+    });
+
+    $('closeModalProyecto').addEventListener('click', () => { $('modalProyecto').classList.add('hidden'); document.body.style.overflow = ''; });
+    $('cancelProyecto').addEventListener('click', () => { $('modalProyecto').classList.add('hidden'); document.body.style.overflow = ''; });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await verificarSesion();
+      renderNavbar('sobremi');
+      renderModalLogin(async () => { renderNavbar('sobremi'); await cargarTodo(); });
+      await cargarTodo();
+    });
+  </script>
+</body>
+</html>
