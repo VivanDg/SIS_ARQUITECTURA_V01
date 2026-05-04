@@ -41,8 +41,8 @@ export function Sidebar() {
           <img src="/logo.png" alt="Logo" style={{ width: 32, height: 32, objectFit: "contain" }} />
         </div>
         <div className="logo-text">
-          <h1>TechPortfolio</h1>
-          <span>Arquitectura</span>
+          <h1>Portfolio</h1>
+          <span>Arquitectura de Software</span>
         </div>
       </div>
 

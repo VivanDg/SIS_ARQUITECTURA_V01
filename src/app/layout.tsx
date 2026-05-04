@@ -30,7 +30,7 @@ export default function RootLayout({
                   {children}
                 </main>
                 <footer className="footer">
-                  <span>© 2024 TechPortfolio. All rights reserved.</span>
+                  <span>© 2026 Portfolio. Derechos reservados para AndyDev.</span>
                   <div className="footer-links">
                     <a href="#">Privacy Policy</a>
                     <a href="#">Terms</a>
