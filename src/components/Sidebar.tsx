@@ -38,7 +38,7 @@ export function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar-logo">
         <div className="logo-icon">
-          <Sparkles size={28} />
+          <img src="/logo.png" alt="Logo" style={{ width: 32, height: 32, objectFit: "contain" }} />
         </div>
         <div className="logo-text">
           <h1>TechPortfolio</h1>
