@@ -190,7 +190,8 @@ export default function AdminPage() {
     setUploadProgress(10);
     
     try {
-      const fileName = `${Date.now()}_${subirFile.name}`;
+      const sanitizedName = subirFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_");
+      const fileName = `${Date.now()}_${sanitizedName}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('archivos')
         .upload(fileName, subirFile);
