@@ -26,6 +26,7 @@ export interface Archivo {
   nombre: string;
   tipo: string;
   url: string;
+  categoria?: string;
   created_at?: string;
 }
 

@@ -75,6 +75,7 @@ export default function AdminPage() {
   const [subirFile, setSubirFile] = useState<File | null>(null);
   const [subirUnidadId, setSubirUnidadId] = useState<string>("");
   const [subirSemanaId, setSubirSemanaId] = useState<string>("");
+  const [categoriaArchivo, setCategoriaArchivo] = useState<string>("actividad");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showModalUnidad, setShowModalUnidad] = useState(false);
   const [editUnidadId, setEditUnidadId] = useState<number | null>(null);
@@ -208,7 +209,8 @@ export default function AdminPage() {
         semana_id: Number(subirSemanaId),
         nombre: subirFile.name,
         tipo,
-        url: publicUrl
+        url: publicUrl,
+        categoria: categoriaArchivo
       });
       
       setUploadProgress(100);
@@ -660,6 +662,18 @@ export default function AdminPage() {
                       {unidades.find(u => u.id === Number(subirUnidadId))?.semanas?.map(s => (
                         <option key={s.id} value={s.id}>Semana {s.numero_semana} — {s.titulo}</option>
                       )) || []}
+                    </select>
+                  </div>
+                  
+                  <div style={styles.inputGroup}>
+                    <label style={styles.inputLabel}>Tipo de archivo</label>
+                    <select 
+                      value={categoriaArchivo} 
+                      onChange={e => setCategoriaArchivo(e.target.value)} 
+                      style={{ ...styles.input, cursor: "pointer" }}
+                    >
+                      <option value="actividad">📋 Actividad</option>
+                      <option value="material">📚 Material de Clase</option>
                     </select>
                   </div>
                   

@@ -129,7 +129,7 @@ export default function SemanaDetallePage() {
           </div>
 
           <div className="card">
-            <h2 className="text-xl font-semibold mb-4">Contenido de la Clase</h2>
+            <h2 className="text-xl font-semibold mb-4">Material de Clase</h2>
             {semana.descripcion ? (
               <div style={{ padding: 16, background: "var(--surface-variant)", borderRadius: 8, marginBottom: 16 }}>
                 <p className="text-muted">{semana.descripcion}</p>
@@ -150,32 +150,68 @@ export default function SemanaDetallePage() {
         <div>
           <div className="card mb-6">
             <h2 className="text-lg font-semibold mb-4" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <FileText size={18} /> Archivos
+              <FileText size={18} /> Actividades
             </h2>
-            {(semana.archivos && semana.archivos.length > 0) ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {(semana.archivos || []).map((archivo, i) => {
-                  const Icon = getFileIcon(archivo.tipo);
-                  return (
-                    <div key={i} style={{ padding: 12, background: "var(--surface-variant)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Icon size={18} style={{ color: unidad.color }} />
-                        <span style={{ fontSize: 14 }}>{archivo.nombre}</span>
+            {(() => {
+              const archivosActividad = (semana.archivos || []).filter(a => a.categoria === 'actividad' || !a.categoria);
+              return archivosActividad.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {archivosActividad.map((archivo, i) => {
+                    const Icon = getFileIcon(archivo.tipo);
+                    return (
+                      <div key={i} style={{ padding: 12, background: "var(--surface-variant)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Icon size={18} style={{ color: unidad.color }} />
+                          <span style={{ fontSize: 14 }}>{archivo.nombre}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <a href={archivo.url} target="_blank" style={{ padding: 4 }}><Eye size={14} /></a>
+                          <a href={archivo.url} download={archivo.nombre} style={{ padding: 4 }}><Download size={14} /></a>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", gap: 4 }}>
-                        <a href={archivo.url} target="_blank" style={{ padding: 4 }}><Eye size={14} /></a>
-                        <a href={archivo.url} download={archivo.nombre} style={{ padding: 4 }}><Download size={14} /></a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ padding: 24, textAlign: "center", background: "var(--surface-variant)", borderRadius: 8 }}>
+                  <File size={24} className="text-muted" style={{ margin: "0 auto 8px", display: "block" }} />
+                  <p className="text-sm text-muted">Sin actividades disponibles</p>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="card mb-6">
+            <h2 className="text-lg font-semibold mb-4" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <BookOpen size={18} /> Material de Clase
+            </h2>
+            {(() => {
+              const archivosMaterial = (semana.archivos || []).filter(a => a.categoria === 'material');
+              return archivosMaterial.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {archivosMaterial.map((archivo, i) => {
+                    const Icon = getFileIcon(archivo.tipo);
+                    return (
+                      <div key={i} style={{ padding: 12, background: "var(--surface-variant)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Icon size={18} style={{ color: unidad.color }} />
+                          <span style={{ fontSize: 14 }}>{archivo.nombre}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <a href={archivo.url} target="_blank" style={{ padding: 4 }}><Eye size={14} /></a>
+                          <a href={archivo.url} download={archivo.nombre} style={{ padding: 4 }}><Download size={14} /></a>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ padding: 24, textAlign: "center", background: "var(--surface-variant)", borderRadius: 8 }}>
-                <File size={24} className="text-muted" style={{ margin: "0 auto 8px", display: "block" }} />
-                <p className="text-sm text-muted">Sin archivos disponibles</p>
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ padding: 24, textAlign: "center", background: "var(--surface-variant)", borderRadius: 8 }}>
+                  <File size={24} className="text-muted" style={{ margin: "0 auto 8px", display: "block" }} />
+                  <p className="text-sm text-muted">Sin material disponible</p>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="card">
