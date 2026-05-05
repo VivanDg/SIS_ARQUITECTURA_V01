@@ -25,7 +25,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, logout } = useAuth();
-  const [otrosOpen, setOtrosOpen] = useState(true);
+  const [otrosOpen, setOtrosOpen] = useState(false);
 
   const isActive = (href: string) => pathname === href;
 
