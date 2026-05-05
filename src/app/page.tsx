@@ -107,10 +107,10 @@ export default function HomePage() {
       <section className="card mb-8" style={{ background: gradient, color: "white", padding: 40 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h1 className="text-4xl font-bold mb-4">Bienvenido a TechPortfolio</h1>
-            <p className="text-xl" style={{ opacity: 0.9 }}>Tu viaje tecnológico continúa aquí. Explora nuevas unidades, haz seguimiento de tu progreso.</p>
+            <h1 className="text-4xl font-bold mb-4">Bienvenido a Arquitectura de Software</h1>
+            <p className="text-xl" style={{ opacity: 0.9 }}>Explora los principios, patrones y mejores prácticas del diseño de sistemas software.</p>
             <Link href="/unidades" className="btn-login mt-6" style={{ boxShadow: "none" }}>
-              Ver Dashboard <ArrowRight size={22} />
+              Ver Unidades <ArrowRight size={22} />
             </Link>
           </div>
         </div>
